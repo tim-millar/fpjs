@@ -4,11 +4,29 @@ import {
   showFormMsg,
   mealInputMsg,
   caloriesInputMsg,
-  saveMealMsg
+  saveMealMsg,
+  deleteMealMsg,
+  editMealMsg,
 } from './Update';
+
 import * as R from 'ramda';
 
-const { pre, div, h1, button, form, label, input, table, tr, td, th } = hh(h);
+const {
+  pre,
+  div,
+  h1,
+  button,
+  form,
+  label,
+  input,
+  table,
+  tr,
+  td,
+  th,
+  thead,
+  tbody,
+  i,
+} = hh(h);
 
 function fieldSet(labelText, inputValue, oninput) {
   return div([
@@ -78,45 +96,65 @@ function formView(dispatch, model) {
   }
 }
 
-function cell(className, value) {
-  return td({ className }, value);
+function cell(tag, className, value) {
+  return tag({ className }, value);
 }
 
-function mealRow(className, meal) {
-  const { description, calories } = meal;
+const tableHeader = thead([
+  tr([
+    cell(th, 'pa2 tl', 'Meal'),
+    cell(th, 'pa2 tr', 'Calories'),
+    cell(th, '', ''),
+  ])
+]);
+
+function mealRow(dispatch, className, meal) {
   return tr({ className }, [
-    cell('pa2 tl', description),
-    cell('pa2 tr', calories),
+    cell(td, 'pa2', meal.description),
+    cell(td, 'pa2 tr', meal.calories),
+    cell(td, 'pa2 tr', [
+      i({
+        className: 'ph1 fa fa-trash-o pointer',
+        onclick: () => dispatch(deleteMealMsg(meal.id))
+      }),
+      i({
+        className: 'ph1 fa fa-pencil-square-o pointer',
+        onclick: () => dispatch(editMealMsg(meal.id)),
+      }),
+    ]),
   ]);
 }
 
-function tableHeader(className) {
-  return tr({ className }, [
-    th({ className: 'pa2 tl' }, 'Meal'),
-    th({ className: 'pa2 tr' }, 'Calories')
+function totalRow(meals) {
+  const total = R.pipe(
+    R.map(({ calories }) => calories),
+    R.sum,
+  )(meals);
+  return tr({ className: 'bt b' }, [
+    cell(td, 'pa2 tr', 'Total:'),
+    cell(td, 'pa2 tr', total),
+    cell(td, '', ''),
   ]);
 }
 
-function totalRow(className, meals) {
-  const total = R.reduce(
-    (acc, { calories }) => acc + calories,
-    0,
+function mealsBody(dispatch, className, meals) {
+  const rows = R.map(
+    R.partial(mealRow, [dispatch, 'stripe-dark']),
     meals,
   );
-  return tr({ className }, [
-    cell('pa2 tl', 'Total:'),
-    cell('pa2 tr', total),
-  ]);
+  const rowsWithTotal = [...rows, totalRow(meals)];
+  return tbody({ className }, rowsWithTotal);
 }
 
-function tableView({ meals }) {
-  return table(
-    { className: 'f3 w-100 mv2 collapse' },
-    [
-      tableHeader('stripe-dark'),
-      R.map(meal => mealRow('stripe-dark', meal), meals),
-      totalRow('b fw5 stripe-dark', meals),
-  ]);
+function tableView(dispatch, meals) {
+  if (meals.length === 0) {
+    return div({ className: 'mv2 w-100 i black-50' }, 'No meals to display...');
+  } else {
+    return table({ className: 'mv2 w-100 collapse'}, [
+      tableHeader,
+      mealsBody(dispatch, '', meals),
+    ]);
+  }
 }
 
 function view(dispatch, model) {
@@ -125,9 +163,9 @@ function view(dispatch, model) {
     [
       h1({ className: 'f2 pv2 bb' }, 'Calorie Counter'),
       formView(dispatch, model),
-      tableView(model),
-      // pre(JSON.stringify(model, null, 2)),
-    ]);
+      tableView(dispatch, model.meals),
+    ]
+  );
 }
 
 export default view;
