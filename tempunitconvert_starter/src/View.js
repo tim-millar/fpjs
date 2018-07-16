@@ -1,7 +1,12 @@
 import * as R from 'ramda';
 import hh from 'hyperscript-helpers';
 import { h } from 'virtual-dom';
-import { updateLeftValue, updateRightValue } from './Update';
+import {
+  leftValueInputMsg,
+  rightValueInputMsg,
+  leftUnitInputMsg,
+  rightUnitInputMsg,
+} from './Update';
 
 const {
   div,
@@ -23,16 +28,19 @@ function unitOptions(selectedUnit) {
   );
 }
 
-function unitSection(dispatch, value, unit, oninput) {
+function unitSection(dispatch, value, unit, valueMsg, unitMsg) {
   return div({ className: 'w-50 ma1' }, [
     input({
       type: 'text',
       className: 'db w-100 mv2 pa2 input-select ba',
       value,
-      oninput,
+      oninput: e => dispatch(valueMsg(e.target.value)),
     }),
     select(
-      { className: 'db w-100 pa2 input-reset br1 bg-white ba b--black' },
+      {
+        className: 'db w-100 pa2 input-reset br1 bg-white ba b--black',
+        onchange: e => dispatch(unitMsg(e.target.value)),
+      },
       unitOptions(unit),
     )
   ]);
@@ -46,13 +54,15 @@ function view(dispatch, model) {
         dispatch,
         model.leftValue,
         model.leftUnit,
-        e => dispatch(updateLeftValue(e.target.value)),
+        leftValueInputMsg,
+        leftUnitInputMsg,
       ),
       unitSection(
         dispatch,
         model.rightValue,
         model.rightUnit,
-        e => dispatch(updateRightValue(e.target.value)),
+        rightValueInputMsg,
+        rightUnitInputMsg,
       ),
     ]),
     pre(JSON.stringify(model, null, 2)),
