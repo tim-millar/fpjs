@@ -1,6 +1,7 @@
 import * as R from 'ramda';
 import hh from 'hyperscript-helpers';
 import { h } from 'virtual-dom';
+import { updateLeftValue, updateRightValue } from './Update';
 
 const {
   div,
@@ -22,12 +23,13 @@ function unitOptions(selectedUnit) {
   );
 }
 
-function unitSection(dispatch, value, unit) {
+function unitSection(dispatch, value, unit, oninput) {
   return div({ className: 'w-50 ma1' }, [
     input({
       type: 'text',
       className: 'db w-100 mv2 pa2 input-select ba',
       value,
+      oninput,
     }),
     select(
       { className: 'db w-100 pa2 input-reset br1 bg-white ba b--black' },
@@ -44,11 +46,13 @@ function view(dispatch, model) {
         dispatch,
         model.leftValue,
         model.leftUnit,
+        e => dispatch(updateLeftValue(e.target.value)),
       ),
       unitSection(
         dispatch,
         model.rightValue,
         model.rightUnit,
+        e => dispatch(updateRightValue(e.target.value)),
       ),
     ]),
     pre(JSON.stringify(model, null, 2)),
