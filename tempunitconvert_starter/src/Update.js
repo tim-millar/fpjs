@@ -37,27 +37,95 @@ export function rightUnitInputMsg(rightUnit) {
   };
 }
 
+function convert(model) {
+  const { leftValue, leftUnit, rightValue, rightUnit } = model;
+
+  const [fromUnit, fromTemp, toUnit] =
+        model.leftFocus
+        ? [leftUnit, leftValue, rightUnit]
+        : [rightUnit, rightValue, leftUnit]
+
+  const otherValue = R.pipe(
+    convertFromToTemp,
+    round,
+  )(fromUnit, toUnit, fromTemp);
+
+  return model.leftFocus
+    ? { ...model, rightValue: otherValue }
+    : { ...model, leftValue: otherValue };
+}
+
+function convertFromToTemp(fromUnit, toUnit, temp) {
+
+  const convertFn = R.pathOr(
+    R.identity,
+    [fromUnit, toUnit],
+    unitConversions,
+  );
+
+  return convertFn(temp);
+}
+
+function fToC(temp) {
+  return 5 / 9 * (temp - 32);
+}
+
+function cToF(temp) {
+  return 9 / 5 * (temp + 32);
+}
+
+function kToC(temp) {
+  return temp - 237.15;
+}
+
+function cToK(temp) {
+  return temp + 273.15;
+}
+
+const fToK = R.pipe(fToC, cToK);
+
+const kToF = R.pipe(kToC, cToF);
+
+function round(number) {
+  return Math.round(number);
+}
+
+const unitConversions = {
+  Celsius: {
+    Fahrenheit: cToF,
+    Kelvin: cToK,
+  },
+  Fahrenheit: {
+    Celsius: fToC,
+    Kelvin: fToK,
+  },
+  Kelvin: {
+    Fahrenheit: kToF,
+    Celsius: kToC,
+  },
+};
+
 function update (msg, model) {
   switch (msg.type) {
     case MSGS.LEFT_VALUE_INPUT: {
       if (msg.leftValue === '')
         return { ...model, leftFocus: true, leftValue: '', rightValue: '' };
       const leftValue = toInt(msg.leftValue);
-      return { ...model, leftFocus: true, leftValue };
+      return convert({ ...model, leftFocus: true, leftValue });
     }
     case MSGS.RIGHT_VALUE_INPUT: {
       if (msg.rightValue === '')
         return { ...model, leftFocus: false, leftValue: '', rightValue: '' };
       const rightValue = toInt(msg.rightValue);
-      return { ...model, leftFocus: false, rightValue };
+      return convert({ ...model, leftFocus: false, rightValue });
     }
     case MSGS.LEFT_UNIT_INPUT: {
       const { leftUnit } = msg;
-      return { ...model, leftUnit };
+      return convert({ ...model, leftUnit });
     }
     case MSGS.RIGHT_UNIT_INPUT: {
       const { rightUnit } = msg;
-      return { ...model, rightUnit };
+      return convert({ ...model, rightUnit });
     }
   }
   return model;
