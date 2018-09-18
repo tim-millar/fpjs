@@ -10,53 +10,78 @@ const {
   div,
   h1,
   pre,
+  label,
   input,
 } = hh(h);
 
-function calculateTip(model) {
-  return (0.01 * model.billAmount) * model.tipPercent;
+const round = places =>
+  R.pipe(
+    num => num * Math.pow(10, places),
+    Math.round,
+    num => num * Math.pow(10, -1 * places),
+  );
+
+export const formatMoney = R.curry(
+  (symbol, places, number) => {
+    return R.pipe(
+      R.defaultTo(0),
+      round(places),
+      num => num.toFixed(places),
+      R.concat(symbol),
+    )(number);
+  }
+);
+
+function calcTipAndTotal(billAmount, tipPercent) {
+  const bill = parseFloat(billAmount);
+  const tip = bill * parseFloat(tipPercent) / 100 || 0;
+  return [tip, tip + bill];
 }
 
-function calculateTotal(model) {
-  return model.billAmount + calculateTip(model);
-}
-
-function inputField(dispatch, valueMsg, name, value) {
-  return div({ className: 'w-50 ma1' }, [
-    name,
+function inputSet(name , value, oninput) {
+  return div({ className: 'w-40' }, [
+    label({ className: 'db fw6 lh-copy f5' }, name),
     input({
-      type: 'number',
-      min: '0.00',
-      step: '0.01',
-      className: 'db w-100 mv2 pa2 input-select ba tr',
+      className: 'border-box pa2 ba mb2 tr w-100',
+      type: 'text',
       value,
-      oninput: e => dispatch(valueMsg(e.target.value))
-    })
+      oninput,
+    }),
   ]);
 }
 
-function tip(model) {
-  return div({ className: 'w-50 ma1' }, [
-    'Tip: ',
-    model.tip.toFixed(2),
+function calculatedAmounts(tip, total) {
+  return div({ className: 'w-40 b bt mt2 pt2' }, [
+    calculatedAmount('Tip:', tip),
+    calculatedAmount('Total:', total)
   ]);
 }
 
-function total(model) {
-  return div({ className: 'w-50 ma1' }, [
-    'Total: ',
-    parseFloat(model.total).toFixed(2),
+function calculatedAmount(description, amount) {
+  return div({ className: 'flex w-100' }, [
+    div({ className: 'w-50 pv1 pr2' }, description),
+    div({ className: 'w-50 tr pv1 pr2' }, amount),
   ]);
 }
 
 function view(dispatch, model) {
+  const { billAmount, tipPercent } = model;
+  const [tip, total] = calcTipAndTotal(billAmount, tipPercent);
+  const toMoney = formatMoney('$', 2);
+
   return div({ className: 'mw6 center' }, [
     h1({ className: 'f2 pv2 bb' }, 'Tip Calculator'),
-    inputField(dispatch, billAmountInputMsg, 'Bill Amount', model.billAmount),
-    inputField(dispatch, tipPercentInputMsg, 'Tip %', model.tipPercent),
-    tip(model),
-    total(model),
-    pre(JSON.stringify(model, null, 2)),
+    inputSet(
+      'Bill Amount',
+      billAmount,
+      e => dispatch(billAmountInputMsg(e.target.value)),
+    ),
+    inputSet(
+      'Tip %',
+      tipPercent,
+      e => dispatch(tipPercentInputMsg(e.target.value)),
+    ),
+    calculatedAmounts(toMoney(tip), toMoney(total)),
   ]);
 }
 
