@@ -23,7 +23,7 @@ const flashcards = {
 };
 
 const initModel = {
-  activeFlashcardId: 0,
+  activeFlashcardId: 2,
   flashcards: flashcards,
 };
 
